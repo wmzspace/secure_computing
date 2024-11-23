@@ -50,7 +50,11 @@ public class AppServlet extends HttpServlet {
 
     private void connectToDatabase() throws ServletException {
         try {
-            database = DriverManager.getConnection(CONNECTION_URL);
+            if (CONNECTION_URL != null) {
+                database = DriverManager.getConnection(CONNECTION_URL);
+            } else {
+                throw new ServletException("Connection URL not specified");
+            }
         } catch (SQLException error) {
             throw new ServletException(error.getMessage());
         }
