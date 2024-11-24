@@ -37,34 +37,60 @@
             </div>
         </div>
         <!-- Add a new section for the captcha -->
-        <div class="row">
+        <div class="row" id="captcha-section" style="display: none;">
             <div class="col-4">
                 <div class="form-group">
                     <label for="captcha">Enter Captcha</label>
-                    <img id="captcha-image" src="/captcha" alt="Captcha" class="mb-2" >
+                    <!-- Clicking the image will refresh the CAPTCHA -->
+                    <img id="captcha-image" src="/captcha" alt="Captcha" class="mb-2 ml-2"
+                         style="cursor: pointer; position: absolute; width: 100px;border: thin solid #ccc;">
                     <input id="captcha" type="text" class="form-control" name="captcha">
                 </div>
             </div>
         </div>
-<!--        <button type="button" id="refresh-captcha" class="btn btn-secondary btn-sm mb-2">Refresh Captcha</button>-->
+        <!--        <button type="button" id="refresh-captcha" class="btn btn-secondary btn-sm mb-2">Refresh Captcha</button>-->
         <button type="submit" class="mt-2 btn btn-primary">Search</button>
     </form>
 </div>
 <script>
+    // Function to refresh CAPTCHA when the image is clicked
     document.getElementById("captcha-image").addEventListener("click", function () {
-        document.getElementById("captcha-image").src = "/captcha?ts=" + new Date().getTime(); // Add timestamp to prevent caching
+        this.src = "/captcha?ts=" + new Date().getTime(); // Add timestamp to prevent caching
     });
 
+    // Function to handle form submission
     document.querySelector("form").addEventListener("submit", function (event) {
         const username = document.getElementById("uid").value.trim();
         const password = document.getElementById("pwd").value.trim();
         const surname = document.getElementById("sn").value.trim();
         const captcha = document.getElementById("captcha").value.trim();
-        if (!username || !password || !surname || !captcha) {
+        const captchaSection = document.getElementById("captcha-section");
+
+        if (!username || !password || !surname || (captchaSection.style.display !== "none" && !captcha)) {
             alert("All fields are required!");
             event.preventDefault();
         }
     });
+
+    // Manage requireCaptcha using localStorage
+    const requireCaptcha = localStorage.getItem("requireCaptcha") === "true"; // Read from localStorage
+    if (requireCaptcha) {
+        document.getElementById("captcha-section").style.display = "block"; // Show CAPTCHA if required
+    }
+
+    // Update localStorage based on server response (example: after a failed login)
+    fetch("/check-captcha-required") // Hypothetical endpoint to check if CAPTCHA is required
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.requireCaptcha) {
+                localStorage.setItem("requireCaptcha", "true"); // Set flag in localStorage
+                document.getElementById("captcha-section").style.display = "block"; // Show CAPTCHA
+            } else {
+                localStorage.setItem("requireCaptcha", "false"); // Reset flag in localStorage
+                document.getElementById("captcha-section").style.display = "none"; // Hide CAPTCHA
+            }
+        })
+        .catch((error) => console.error("Error checking CAPTCHA requirement:", error));
 </script>
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
         integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"

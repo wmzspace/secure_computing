@@ -23,7 +23,7 @@ import java.util.*;
 
 @SuppressWarnings("serial")
 public class AppServlet extends HttpServlet {
-    //  private static final String CONNECTION_URL = "jdbc:sqlite:db.sqlite3";
+    // private static final String CONNECTION_URL = "jdbc:sqlite:db.sqlite3";
     private static final Dotenv dotenv = Dotenv.load(); // 加载 .env 文件
     private static final String CONNECTION_URL = dotenv.get("DB_CONNECTION_URL"); // 从 .env 文件获取变量
     private static final String AUTH_QUERY = "select * from user where username=? and password=?";
@@ -65,15 +65,27 @@ public class AppServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String path = request.getPathInfo();
+        HttpSession session = request.getSession(true);
+
         if ("/captcha".equals(path)) {
             // Generate CAPTCHA and store it in the session
             String captchaText = generateCaptchaText();
-            HttpSession session = request.getSession(true); // Create a new session if none exists
             session.setAttribute(CAPTCHA_SESSION_KEY, captchaText);
 
             BufferedImage captchaImage = generateCaptchaImage(captchaText);
             response.setContentType("image/png");
             ImageIO.write(captchaImage, "png", response.getOutputStream());
+            return;
+        }
+
+        if ("/check-captcha-required".equals(path)) {
+            // Check if CAPTCHA is required and return JSON response
+            Integer failedAttempts = (Integer) session.getAttribute("failedAttempts");
+            boolean requireCaptcha = failedAttempts != null && failedAttempts > 0;
+
+            response.setContentType("application/json");
+            response.getWriter().write("{\"requireCaptcha\": " + requireCaptcha + "}");
+            response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
 
@@ -103,28 +115,42 @@ public class AppServlet extends HttpServlet {
         String surname = request.getParameter("surname");
         String captcha = request.getParameter("captcha");
 
-        HttpSession session = request.getSession();
-        String expectedCaptcha = (String) session.getAttribute(CAPTCHA_SESSION_KEY);
-
-        if (isInvalidateInput(username) || isInvalidateInput(password) || isInvalidateInput(surname) || isInvalidateInput(captcha)) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid input!");
-            return;
+        HttpSession session = request.getSession(true);
+        Integer failedAttempts = (Integer) session.getAttribute("failedAttempts");
+        if (failedAttempts == null) {
+            failedAttempts = 0; // Initialize failed attempts
         }
 
-        if (!captcha.equals(expectedCaptcha)) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid captcha!");
+        // Check if CAPTCHA is required
+        boolean requireCaptcha = failedAttempts > 0;
+        if (requireCaptcha) {
+            String expectedCaptcha = (String) session.getAttribute(CAPTCHA_SESSION_KEY);
+            if (isInvalidateInput(captcha) || !captcha.equalsIgnoreCase(expectedCaptcha)) {
+                session.setAttribute("failedAttempts", failedAttempts + 1);
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid captcha!");
+                return;
+            }
+        }
+
+        if (isInvalidateInput(username) || isInvalidateInput(password) || isInvalidateInput(surname)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid input!");
             return;
         }
 
         try {
             if (authenticated(username, password)) {
+                session.setAttribute("failedAttempts", 0); // Reset failed attempts on successful login
                 Map<String, Object> model = new HashMap<>();
                 model.put("records", searchResults(surname));
+                model.put("requireCaptcha", false); // No CAPTCHA required after successful login
                 Template template = fm.getTemplate("details.html");
                 template.process(model, response.getWriter());
             } else {
+                session.setAttribute("failedAttempts", failedAttempts + 1); // Increment failed attempts
+                Map<String, Object> model = new HashMap<>();
+                model.put("requireCaptcha", true); // Inform frontend to show CAPTCHA
                 Template template = fm.getTemplate("invalid.html");
-                template.process(null, response.getWriter());
+                template.process(model, response.getWriter()); // Pass the model to the template
             }
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
@@ -177,7 +203,7 @@ public class AppServlet extends HttpServlet {
     }
 
     private BufferedImage generateCaptchaImage(String captchaText) {
-        int width = 160, height = 50;
+        int width = 200, height = 50;
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
         g.setColor(Color.WHITE);
