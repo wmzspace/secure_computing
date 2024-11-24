@@ -36,15 +36,31 @@
                 </div>
             </div>
         </div>
+        <!-- Add a new section for the captcha -->
+        <div class="row">
+            <div class="col-4">
+                <div class="form-group">
+                    <label for="captcha">Enter Captcha</label>
+                    <img id="captcha-image" src="/captcha" alt="Captcha" class="mb-2" >
+                    <input id="captcha" type="text" class="form-control" name="captcha">
+                </div>
+            </div>
+        </div>
+<!--        <button type="button" id="refresh-captcha" class="btn btn-secondary btn-sm mb-2">Refresh Captcha</button>-->
         <button type="submit" class="mt-2 btn btn-primary">Search</button>
     </form>
 </div>
 <script>
+    document.getElementById("captcha-image").addEventListener("click", function () {
+        document.getElementById("captcha-image").src = "/captcha?ts=" + new Date().getTime(); // Add timestamp to prevent caching
+    });
+
     document.querySelector("form").addEventListener("submit", function (event) {
         const username = document.getElementById("uid").value.trim();
         const password = document.getElementById("pwd").value.trim();
         const surname = document.getElementById("sn").value.trim();
-        if (!username || !password || !surname) {
+        const captcha = document.getElementById("captcha").value.trim();
+        if (!username || !password || !surname || !captcha) {
             alert("All fields are required!");
             event.preventDefault();
         }

@@ -7,17 +7,19 @@ import freemarker.template.TemplateExceptionHandler;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.mindrot.jbcrypt.BCrypt;
 
+import javax.imageio.ImageIO;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SuppressWarnings("serial")
 public class AppServlet extends HttpServlet {
@@ -26,7 +28,7 @@ public class AppServlet extends HttpServlet {
     private static final String CONNECTION_URL = dotenv.get("DB_CONNECTION_URL"); // 从 .env 文件获取变量
     private static final String AUTH_QUERY = "select * from user where username=? and password=?";
     private static final String SEARCH_QUERY = "select * from patient where surname=? collate nocase";
-
+    private static final String CAPTCHA_SESSION_KEY = "captcha";
     private final Configuration fm = new Configuration(Configuration.VERSION_2_3_28);
     private Connection database;
 
@@ -62,6 +64,20 @@ public class AppServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String path = request.getPathInfo();
+        if ("/captcha".equals(path)) {
+            // Generate CAPTCHA and store it in the session
+            String captchaText = generateCaptchaText();
+            HttpSession session = request.getSession(true); // Create a new session if none exists
+            session.setAttribute(CAPTCHA_SESSION_KEY, captchaText);
+
+            BufferedImage captchaImage = generateCaptchaImage(captchaText);
+            response.setContentType("image/png");
+            ImageIO.write(captchaImage, "png", response.getOutputStream());
+            return;
+        }
+
+        // Render login.html
         try {
             Template template = fm.getTemplate("login.html");
             template.process(null, response.getWriter());
@@ -72,11 +88,9 @@ public class AppServlet extends HttpServlet {
         }
     }
 
-
     private String hashPassword(String password) {
         return BCrypt.hashpw(password, BCrypt.gensalt());
     }
-
 
     private boolean isInvalidateInput(String input) {
         return input == null || input.trim().isEmpty();
@@ -87,12 +101,20 @@ public class AppServlet extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         String surname = request.getParameter("surname");
+        String captcha = request.getParameter("captcha");
 
-        if (isInvalidateInput(username) || isInvalidateInput(password) || isInvalidateInput(surname)) {
+        HttpSession session = request.getSession();
+        String expectedCaptcha = (String) session.getAttribute(CAPTCHA_SESSION_KEY);
+
+        if (isInvalidateInput(username) || isInvalidateInput(password) || isInvalidateInput(surname) || isInvalidateInput(captcha)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid input!");
             return;
         }
 
+        if (!captcha.equals(expectedCaptcha)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid captcha!");
+            return;
+        }
 
         try {
             if (authenticated(username, password)) {
@@ -124,7 +146,6 @@ public class AppServlet extends HttpServlet {
         return false; // 用户名不存在或密码不匹配
     }
 
-
     private List<Record> searchResults(String surname) throws SQLException {
         List<Record> records = new ArrayList<>();
         PreparedStatement query = database.prepareStatement(SEARCH_QUERY);
@@ -142,5 +163,29 @@ public class AppServlet extends HttpServlet {
             }
         }
         return records;
+    }
+
+    private String generateCaptchaText() {
+        int length = 6;
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        Random random = new Random();
+        StringBuilder captcha = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            captcha.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return captcha.toString();
+    }
+
+    private BufferedImage generateCaptchaImage(String captchaText) {
+        int width = 160, height = 50;
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, width, height);
+        g.setColor(Color.BLACK);
+        g.setFont(new Font("Arial", Font.BOLD, 40));
+        g.drawString(captchaText, 20, 35);
+        g.dispose();
+        return image;
     }
 }
