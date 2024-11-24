@@ -206,11 +206,62 @@ public class AppServlet extends HttpServlet {
         int width = 200, height = 50;
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
-        g.setColor(Color.WHITE);
+
+        // Set background color with gradient
+        GradientPaint gradient = new GradientPaint(0, 0, Color.LIGHT_GRAY, width, height, Color.WHITE, true);
+        g.setPaint(gradient);
         g.fillRect(0, 0, width, height);
-        g.setColor(Color.BLACK);
+
+        // Add random noise (dots)
+        Random random = new Random();
+        for (int i = 0; i < 150; i++) {
+            int x = random.nextInt(width);
+            int y = random.nextInt(height);
+            int rgb = random.nextInt(0xFFFFFF); // Random color
+            image.setRGB(x, y, rgb);
+        }
+
+        // Add random lines
+        g.setColor(Color.GRAY);
+        for (int i = 0; i < 5; i++) {
+            int x1 = random.nextInt(width);
+            int y1 = random.nextInt(height);
+            int x2 = random.nextInt(width);
+            int y2 = random.nextInt(height);
+            g.drawLine(x1, y1, x2, y2);
+        }
+
+        // Draw distorted text
         g.setFont(new Font("Arial", Font.BOLD, 40));
-        g.drawString(captchaText, 20, 35);
+        for (int i = 0; i < captchaText.length(); i++) {
+            char c = captchaText.charAt(i);
+
+            // Randomize font color
+            g.setColor(new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255)));
+
+            // Randomize rotation angle
+            double angle = (random.nextDouble() - 0.5) * 0.5; // Rotate between -0.25 and 0.25 radians
+            g.rotate(angle, 20 + i * 30, 35);
+
+            // Draw character
+            g.drawString(String.valueOf(c), 20 + i * 30, 35);
+
+            // Reset rotation
+            g.rotate(-angle, 20 + i * 30, 35);
+        }
+
+        // Add more noise (lines or arcs)
+        g.setColor(Color.DARK_GRAY);
+        for (int i = 0; i < 3; i++) {
+            int x = random.nextInt(width);
+            int y = random.nextInt(height);
+            int w = random.nextInt(50);
+            int h = random.nextInt(50);
+            int startAngle = random.nextInt(360);
+            int arcAngle = random.nextInt(360);
+            g.drawArc(x, y, w, h, startAngle, arcAngle);
+        }
+
         g.dispose();
         return image;
     }
