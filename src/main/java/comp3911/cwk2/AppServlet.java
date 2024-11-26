@@ -123,13 +123,23 @@ public class AppServlet extends HttpServlet {
 
         // Check if CAPTCHA is required
         boolean requireCaptcha = failedAttempts > 0;
-        if (requireCaptcha) {
-            String expectedCaptcha = (String) session.getAttribute(CAPTCHA_SESSION_KEY);
-            if (isInvalidateInput(captcha) || !captcha.equalsIgnoreCase(expectedCaptcha)) {
-                session.setAttribute("failedAttempts", failedAttempts + 1);
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid captcha!");
-                return;
+        try{
+            if (requireCaptcha) {
+                String expectedCaptcha = (String) session.getAttribute(CAPTCHA_SESSION_KEY);
+                if (isInvalidateInput(captcha) || !captcha.equalsIgnoreCase(expectedCaptcha)) {
+                    session.setAttribute("failedAttempts", failedAttempts + 1);
+                    // response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid captcha!");
+                    Map<String, Object> model = new HashMap<>();
+                    model.put("msg", "Wrong captcha");
+                    Template template = fm.getTemplate("invalid.html");
+                    template.process(model, response.getWriter()); // Pass the model to the template
+                    response.setContentType("text/html");
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    return;
+                }
             }
+        } catch (Exception error){
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Template is error");
         }
 
         if (isInvalidateInput(username) || isInvalidateInput(password) || isInvalidateInput(surname)) {
