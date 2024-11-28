@@ -10,10 +10,10 @@
     <div class="container">
       <h1 class="mt-2 mb-4">Patient Records System</h1>
       <div class="alert alert-danger" role="alert">
-        <p>The login credentials you supplied are not valid.</p>
         <#if msg ??>
           <p>${ msg?html }</p>
         <#else>
+          <p>The login credentials you supplied are not valid.</p>
         </#if>
         <p class="mb-0">Please <a href="/" class="alert-link">try again</a>.</p>
       </div>

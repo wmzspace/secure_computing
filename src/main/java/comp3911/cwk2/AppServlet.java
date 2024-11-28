@@ -26,7 +26,6 @@ public class AppServlet extends HttpServlet {
     // private static final String CONNECTION_URL = "jdbc:sqlite:db.sqlite3";
     private static final Dotenv dotenv = Dotenv.load(); // 加载 .env 文件
     private static final String CONNECTION_URL = dotenv.get("DB_CONNECTION_URL"); // 从 .env 文件获取变量
-    private static final String AUTH_QUERY = "select * from user where username=? and password=?";
     private static final String SEARCH_QUERY = "select * from patient where surname=? collate nocase";
     private static final String CAPTCHA_SESSION_KEY = "captcha";
     private final Configuration fm = new Configuration(Configuration.VERSION_2_3_28);
@@ -98,10 +97,6 @@ public class AppServlet extends HttpServlet {
         } catch (TemplateException error) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private String hashPassword(String password) {
-        return BCrypt.hashpw(password, BCrypt.gensalt());
     }
 
     private boolean isInvalidateInput(String input) {
