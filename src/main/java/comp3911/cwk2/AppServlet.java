@@ -24,8 +24,8 @@ import java.util.*;
 @SuppressWarnings("serial")
 public class AppServlet extends HttpServlet {
     // private static final String CONNECTION_URL = "jdbc:sqlite:db.sqlite3";
-    private static final Dotenv dotenv = Dotenv.load(); // 加载 .env 文件
-    private static final String CONNECTION_URL = dotenv.get("DB_CONNECTION_URL"); // 从 .env 文件获取变量
+    private static final Dotenv dotenv = Dotenv.load(); // load .env file
+    private static final String CONNECTION_URL = dotenv.get("DB_CONNECTION_URL"); // load local variable from .env
     private static final String SEARCH_QUERY = "select * from patient where surname=? collate nocase";
     private static final String CAPTCHA_SESSION_KEY = "captcha";
     private final Configuration fm = new Configuration(Configuration.VERSION_2_3_28);
@@ -169,18 +169,18 @@ public class AppServlet extends HttpServlet {
             query.setString(1, username);
             try (ResultSet results = query.executeQuery()) {
                 if (results.next()) {
-                    String storedHash = results.getString("password"); // 数据库中的哈希值
-                    return BCrypt.checkpw(password, storedHash); // 验证用户输入的密码
+                    String storedHash = results.getString("password"); // The hash value in the database
+                    return BCrypt.checkpw(password, storedHash); // Verify the password entered by the user
                 }
             }
         }
-        return false; // 用户名不存在或密码不匹配
+        return false; // Username does not exist or password does not match
     }
 
     private List<Record> searchResults(String surname) throws SQLException {
         List<Record> records = new ArrayList<>();
         PreparedStatement query = database.prepareStatement(SEARCH_QUERY);
-        query.setString(1, surname); // 参数绑定，防止 SQL 注入
+        query.setString(1, surname); // prevent SQL injection
         try (ResultSet results = query.executeQuery()) {
             while (results.next()) {
                 Record rec = new Record();
