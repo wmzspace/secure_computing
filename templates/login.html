@@ -42,6 +42,7 @@
                 <div class="form-group">
                     <label for="captcha">Enter Captcha</label>
                     <!-- Clicking the image will refresh the CAPTCHA -->
+                    <!--suppress HtmlUnknownTarget -->
                     <img id="captcha-image" src="/captcha" alt="Captcha" class="mb-2 ml-2"
                          style="cursor: pointer; position: absolute; width: 100px;border: thin solid #ccc;">
                     <input id="captcha" type="text" class="form-control" name="captcha">
@@ -52,6 +53,7 @@
         <button type="submit" class="mt-2 btn btn-primary">Search</button>
     </form>
 </div>
+<!--suppress JSUnusedGlobalSymbols -->
 <script>
     // Function to refresh CAPTCHA when the image is clicked
     document.getElementById("captcha-image").addEventListener("click", function () {
@@ -82,6 +84,7 @@
     fetch("/check-captcha-required") // Hypothetical endpoint to check if CAPTCHA is required
         .then((response) => response.json())
         .then((data) => {
+            // noinspection JSUnresolvedReference
             if (data.requireCaptcha) {
                 localStorage.setItem("requireCaptcha", "true"); // Set flag in localStorage
                 document.getElementById("captcha-section").style.display = "block"; // Show CAPTCHA

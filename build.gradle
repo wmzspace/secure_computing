@@ -1,3 +1,4 @@
+//file:noinspection VulnerableLibrariesLocal
 plugins {
   id 'java'
   id 'application'
@@ -27,7 +28,7 @@ idea {
   }
 }
 
-task submission(type: Zip) {
+tasks.register('submission', Zip) {
   group = 'Submission'
   description = 'Generates Zip archive suitable for submission to Minerva.'
 
@@ -40,7 +41,7 @@ task submission(type: Zip) {
 
   doFirst {
     //assert file("report.pdf").exists()
-    if (! file("report.pdf").exists()) {
+    if (!file("report.pdf").exists()) {
       println "Cannot find a file named report.pdf"
       println "Check that you have named your report PDF correctly"
       println "Check that the file is in the same directory as build.gradle"

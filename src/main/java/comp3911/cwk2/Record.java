@@ -1,5 +1,6 @@
 package comp3911.cwk2;
 
+@SuppressWarnings("unused")
 public class Record {
   private String surname;
   private String forename;

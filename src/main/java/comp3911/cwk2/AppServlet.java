@@ -21,7 +21,6 @@ import java.sql.*;
 import java.util.List;
 import java.util.*;
 
-@SuppressWarnings("serial")
 public class AppServlet extends HttpServlet {
     // private static final String CONNECTION_URL = "jdbc:sqlite:db.sqlite3";
     private static final Dotenv dotenv = Dotenv.load(); // load .env file
@@ -62,7 +61,7 @@ public class AppServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String path = request.getPathInfo();
         HttpSession session = request.getSession(true);
 
@@ -104,7 +103,7 @@ public class AppServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         String surname = request.getParameter("surname");
